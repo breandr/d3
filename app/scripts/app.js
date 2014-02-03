@@ -11,7 +11,6 @@ angular.module('d3App', [
   .when('/', {
     templateUrl: 'views/main.html',
     controller: 'MainCtrl',
-    activeTab: 'home'
   })
   .when('/solar-generation-co2-saved-temperature-over-time', {
     templateUrl: 'views/solar-generation-co2-saved-temperature-over-time.html',
