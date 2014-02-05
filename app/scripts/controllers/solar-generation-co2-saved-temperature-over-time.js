@@ -8,8 +8,6 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
       flyTo: null
     };
 
-    var startYear = 1800;
-
     // Various accessors that specify the four dimensions of data to visualize.
     function co2Saved(d) {
       return d.co2Saved;
@@ -27,7 +25,7 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
     }
 
     function color(d) {
-      return d.region;
+      return d.state;
     }
 
     function key(d) {
@@ -51,13 +49,12 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
       .append('g')
       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-    // Add the year label; the value is set on transition.
+    // Add the date label; the value is set on transition.
     var label = svg.append('text')
-      .attr('class', 'year label')
+      .attr('class', 'date label')
       .attr('text-anchor', 'start')
-      .attr('y', 28)
-      .attr('x', 30)
-      .text(startYear);
+      .attr('y', 10)
+      .attr('x', 30);
 
     var co2Scale = d3.scale.log().range([0, width]),
       generationScale = d3.scale.linear().range([height, 0]),
@@ -74,8 +71,8 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
     svg.append('g')
       .attr('class', 'co2-axis x axis')
       .attr('transform', 'translate(0,' + height + ')')
-      .call(co2Axis)
-      svg.append('text')
+      .call(co2Axis);
+    svg.append('text')
       .attr('class', 'co2saved-label x label')
       .attr('text-anchor', 'start')
       .attr('x', 5)
@@ -107,48 +104,70 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
       .style('text-anchor', 'end')
       .text('temperature');
 
-
     // Load the data.
-    d3.json('/scripts/solar-gen-co2-savings-data.json', function (error, data) {
-      var maxYear = 2009,
+    d3.json('/scripts/data.json', function (error, data) {
+      //convert date from string to date
+      for (var i = 0, l = data.length; i < l; ++i) {
+        for (var i2 = 0, l2 = data[i].data.length; i2 < l2; ++i2) {
+          var dateArray = data[i].data[i2].date.match(/\d{2}/g),
+            year = '20' + dateArray[0],
+            month = dateArray[1] - 1,
+            day = daeArray[2] - 1;
+
+          data[i].data[i2].date = new Date(year, month, day);
+        }
+      }
+
+      var minDate = d3.min(data, function (d) {
+        return d.data[0].date;
+      }),
+        maxDate = d3.max(data, function (d) {
+          return d.data[0].date;
+        }),
         minCo2Saved = d3.min(data, function (d) {
-          return d3.min(d.co2Saved, function (c) {
-            return c[1];
+          return d3.min(d.data, function (d2) {
+            return d2.co2;
           });
         }),
         maxCo2Saved = d3.max(data, function (d) {
-          return d3.max(d.co2Saved, function (c) {
-            return c[1];
+          return d3.max(d.data, function (d2) {
+            return d2.co2;
           });
         }),
         minGeneration = d3.min(data, function (d) {
-          return d3.min(d.generation, function (c) {
-            return c[1];
+          return d3.min(d.data, function (d2) {
+            return d2.gen;
           });
         }),
         maxGeneration = d3.max(data, function (d) {
-          return d3.max(d.generation, function (c) {
-            return c[1];
+          return d3.max(d.data, function (d2) {
+            return d2.gen;
           });
         }),
         maxTotalGeneration = d3.max(data, function (d) {
-          return getTotalGeneration(d.generation, maxYear);
+          return getTotalGeneration(d, maxDate);
         }),
         minTemperature = d3.min(data, function (d) {
-          return d3.min(d.temperature, function (c) {
-            return c[1];
+          return d3.min(d.data, function (d2) {
+            return d2.tmp;
           });
         }),
         maxTemperature = d3.max(data, function (d) {
-          return d3.max(d.temperature, function (c) {
-            return c[1];
+          return d3.min(d.data, function (d2) {
+            return d2.tmp;
           });
         });
+
+      console.log(minDate, maxDate);
 
       co2Scale.domain([minCo2Saved, maxCo2Saved]);
       generationScale.domain([minGeneration, maxGeneration]);
       totalGenerationScale.domain([0, maxTotalGeneration]);
       averageTemperatureScale.domain([minTemperature, maxTemperature]);
+
+      //add date label
+      svg.select('.date.label')
+        .text(moment(minDate).format('Do MMM YYYY'));
 
       //redraw axes
       svg.select('.co2-axis')
@@ -163,9 +182,9 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
         return d[0];
       });
 
-      // Positions the dots based on data.
-      function position(dot) {
-        dot.attr('cx', function (d) {
+      // updateBubbles the bubbles based on data.
+      function updateBubble(bubble) {
+        bubble.attr('cx', function (d) {
           return co2Scale(co2Saved(d));
         })
           .attr('cy', function (d) {
@@ -176,37 +195,35 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
           });
       }
 
-      // Defines a sort order so that the smallest dots are drawn on top.
+      // Defines a sort order so that the smallest bubbles are drawn on top.
       function order(a, b) {
         return totalGeneration(b) - totalGeneration(a);
       }
 
-      function getTotalGeneration(generation, year) {
+      function getTotalGeneration(generation, date) {
         var totalGeneration = 0;
 
-        for (var i = 0; i < generation.length && year >= generation[i][0]; ++i) {
+        for (var i = 0; i < generation.length && date >= generation[i][0]; ++i) {
           totalGeneration += generation[i][1];
         }
 
         return totalGeneration;
       }
 
-      function getAverageTemperature(year) {
-        return 150000 - year*80;
+      function getAverageTemperature(date) {
+        return 150000 - date * 50;
       }
 
-      // Interpolates the dataset for the given (fractional) year.
-      function interpolateData(year) {
+      // Interpolates the dataset for the given (fractional) date.
+      function interpolateData(date) {
         sharedObject.yearData = data.map(function (d) {
           return {
             name: d.name,
-            region: d.region,
-            temperature: interpolateValues(d.temperature, year),
-            generation: interpolateValues(d.generation, year),
-            totalGeneration: getTotalGeneration(d.generation, year),
-            co2Saved: interpolateValues(d.co2Saved, year),
-            lat: d.lat,
-            lon: d.lon
+            state: d.state,
+            temperature: interpolateValues(d.tmp, date),
+            generation: interpolateValues(d.gen, date),
+            totalGeneration: getTotalGeneration(d.gen, date),
+            co2Saved: interpolateValues(d.co2, date)
           };
         });
 
@@ -217,21 +234,21 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
         .attr('class', 'temperature column')
         .style('fill', 'red')
         .attr('x', width - 4)
-        .attr('y', averageTemperatureScale(getAverageTemperature(startYear)))
-        .attr('height', height - averageTemperatureScale(getAverageTemperature(startYear)))
+        .attr('y', averageTemperatureScale(getAverageTemperature(minDate)))
+        .attr('height', height - averageTemperatureScale(getAverageTemperature(minDate)))
         .attr('width', 3);
 
-      // Add a dot per nation. Initialize the data at 1800, and set the colors.
-      var dot = svg.append('g')
-        .attr('class', 'dots')
-        .selectAll('.dot')
-        .data(interpolateData(startYear))
+      // Add a bubble per nation. Initialize the data at 1800, and set the colors.
+      var bubble = svg.append('g')
+        .attr('class', 'bubbles')
+        .selectAll('.bubble')
+        .data(interpolateData(minDate))
         .enter().append('circle')
-        .attr('class', 'dot')
+        .attr('class', 'bubble')
         .style('fill', function (d) {
           return colorScale(color(d));
         })
-        .call(position)
+        .call(updateBubble)
         .sort(order)
         .on('mouseover', function (d) {
           sharedObject.dispatch.nationMouseover(d);
@@ -241,41 +258,41 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
         });
 
       // Add a title.
-      dot.append('title')
+      bubble.append('title')
         .text(function (d) {
           return d.name;
         });
 
-      // Updates the display to show the specified year.
-      function displayYear(year) {
+      // Updates the display to show the specified date.
+      function displayYear(date) {
         averageTemperature
           .transition()
           .duration(100)
-          .attr('y', averageTemperatureScale(getAverageTemperature(year)))
-          .attr('height', height - averageTemperatureScale(getAverageTemperature(year)))
+          .attr('y', averageTemperatureScale(getAverageTemperature(date)))
+          .attr('height', height - averageTemperatureScale(getAverageTemperature(date)));
 
-        dot.data(interpolateData(year), key)
+        bubble.data(interpolateData(date), key)
           .transition()
           .duration(100)
-          .call(position)
+          .call(updateBubble)
           .sort(order);
-        label.text(Math.round(year));
+        label.text(Math.round(date));
       }
 
-      // Finds (and possibly interpolates) the value for the specified year.
-      function interpolateValues(values, year) {
-        var i = bisect.left(values, year, 0, values.length - 1),
+      // Finds (and possibly interpolates) the value for the specified date.
+      function interpolateValues(values, date) {
+        var i = bisect.left(values, date, 0, values.length - 1),
           a = values[i];
         if (i > 0) {
           var b = values[i - 1],
-            t = (year - a[0]) / (b[0] - a[0]);
+            t = (date - a[0]) / (b[0] - a[0]);
           return a[1] * (1 - t) + b[1] * t;
         }
         return a[1];
       }
 
       sharedObject.dispatch.on('nationMouseover.d3', function (nationObject) {
-        dot.style('fill', function (d) {
+        bubble.style('fill', function (d) {
           if (typeof nationObject !== 'undefined' && d.name === nationObject.name) {
             return '#00FF00';
           }
@@ -285,11 +302,11 @@ angular.module('d3App').controller('SolarGenerationCo2SavedTemperatureOverTimeCt
       });
 
       function update() {
-        var year = startYear;
+        var date = minDate;
 
         return function () {
-          displayYear(year);
-          if (year++ === 2009) {
+          displayYear(date);
+          if (date++ === 2009) {
             clearInterval(updater);
           }
         };

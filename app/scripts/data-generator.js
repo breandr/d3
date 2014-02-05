@@ -1,32 +1,45 @@
-'use strict';
+(function () {
+  'use strict';
 
-var numSchools = 1500,
-  co2Coefficient = 5.13,
-  minKwhGen = 4,
-  maxKwhGen = 20,
-  schools = [],
-  i, l;
+  var numSchools = 150,
+    co2Coefficient = 5.13,
+    minKwhGen = 4,
+    maxKwhGen = 20,
+    minTemperature = 20,
+    maxTemperature = 35;
+  window.schools = [];
 
-for (i = 0; i < numSchools; ++i) {
-  var school = {
-    name: 'School name',
-    co2: [],
-    gen: [],
-    tmp: []
-  },
-    date = startDate = moment('2012-01-01'),
-    endDate = moment('2014-01-01');
-
-  for (date < endDate) {
-    var kwhGeneration = Math.floor(Math.rand(minKwhGen, maxKwhGen) * 1000) / 1000,
-      co2Saved = kwhGen / co2Coefficient,
-      temperature = Math.floor(Math.rand(minTemperature, maxTemperature) * 100) / 100;
-
-    school.co2.push([date, co2Saved]);
-    school.gen.push([date, kwhGeneration]);
-    school.tmp.push([date, temperature]);
-    date.add('days', 1);
+  function randomDate(start, end) {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
   }
 
-  schools.push(school)
-}
+  function random(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  for (var i = 0; i < numSchools; ++i) {
+    var school = {
+      name: 'School' + i,
+      state: Math.round(random(1, 7)),
+      data: []
+    },
+      endDate = moment().date(0), //get last day of last month
+      date = moment(randomDate(new Date('2012-01-01'), endDate.toDate())); //get date between 01 Jan 2012 and last day of last month
+
+    for (; date < endDate; date.add('days', 1)) {
+      var kwhGen = parseFloat(random(minKwhGen, maxKwhGen).toFixed(3)),
+        co2Saved = parseFloat((kwhGen / co2Coefficient).toFixed(3)),
+        temperature = parseFloat(random(minTemperature, maxTemperature).toFixed(3)),
+        dateString = date.format('YYMMDD');
+
+      school.data.push({
+        date: dateString,
+        gen: kwhGen,
+        co2: co2Saved,
+        tmp: temperature
+      });
+    }
+
+    window.schools.push(school);
+  }
+}());
