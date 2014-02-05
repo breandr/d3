@@ -19,6 +19,9 @@
   <!-- build:css({.tmp,app}) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">
   <!-- endbuild -->
+  <!-- build:css({.tmp,app}) styles/charts.css -->
+  <link rel="stylesheet" href="styles/default-charts.css">
+  <!-- endbuild -->
 </head>
 <body ng-app="d3App">
     <!--[if lt IE 7]>
@@ -31,7 +34,7 @@
         </ul>
       </div>
       <!-- Add your site or application content here -->
-      <div class="container" ng-view=""></div>
+      <div ng-view=""></div>
 
       <!-- Google Analytics: change UA-XXXXX-X to be your site's ID -->
       <script>
@@ -60,6 +63,7 @@
     <script src="bower_components/angular-route/angular-route.js"></script>
     <script src="bower_components/d3/d3.js"></script>
     <script src="bower_components/nvd3/nv.d3.js"></script>
+    <script src="bower_components/moment/moment.js"></script>
     <!-- endbower -->
     <!-- endbuild -->
 
@@ -68,6 +72,7 @@
     <script src="scripts/controllers/main.js"></script>
     <script src="scripts/controllers/solar-generation-co2-saved-temperature-over-time.js"></script>
     <script src="scripts/controllers/header.js"></script>
+    <script src="scripts/default-charts.js"></script>
     <!-- endbuild -->
   </body>
   </html>

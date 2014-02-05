@@ -1,0 +1,22 @@
+.d3-chart .bar {
+  fill: steelblue;
+}
+
+.d3-chart .bar:hover {
+  fill: brown;
+}
+
+.d3-chart .axis text {
+  font: 10px sans-serif;
+}
+
+.d3-chart .axis path,
+.d3-chart .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.d3-chart .x.axis path {
+  /*display: none;*/
+}

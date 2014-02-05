@@ -1,5 +1,5 @@
 'use strict';
 
 angular.module('d3App')
-.controller('MainCtrl', function ($scope) {
+.controller('MainCtrl', function (/*$scope*/) {
 });
